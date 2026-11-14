@@ -4,6 +4,7 @@ import json
 import logging
 from typing import Any
 from pathlib import Path
+
 from langchain_core.documents import Document
 
 
@@ -13,16 +14,13 @@ logger = logging.getLogger(__name__)
 class MarkdownLoader:
     """
     Загрузчик Markdown-файлов.
+
     Читает все .md-файлы из указанной директории и оборачивает их в Document с метаданными
     source (URL страницы из одноимённого .json, который пишет neoflex_parser), title и document_name.
-
-    :param base_dir: Директория с Markdown-файлами.
     """
 
     def __init__(self, base_dir: Path | str) -> None:
         """
-        Инициализация загрузчика.
-
         :param base_dir: Директория с Markdown-файлами.
         """
         self._base_dir = Path(base_dir)
@@ -31,17 +29,22 @@ class MarkdownLoader:
         """
         Загружает все Markdown-файлы из директории.
 
-        :return: Список Document-объектов.
+        :return: Список Document-объектов в порядке сортировки путей: так node_id чанков
+            одинаковы при каждом запуске.
         :raise FileNotFoundError: Если директория с Markdown-файлами не найдена.
+        :raise ValueError: Если .json с метаданными повреждён. Загрузка идёт до записи в
+            хранилище, поэтому остановка не оставляет индекс в полузаписанном состоянии.
         """
-        if not self._base_dir.exists():
+        if not self._base_dir.is_dir():
             raise FileNotFoundError(f"Директория с Markdown-файлами не найдена: {self._base_dir}")
 
         documents: list[Document] = []
+        skipped = 0
         for file_path in sorted(self._base_dir.rglob("*.md")):
             text = file_path.read_text(encoding="utf-8").strip()
             if not text:
                 logger.warning("Пропущен пустой файл: %s", file_path)
+                skipped += 1
                 continue
 
             meta = self._read_meta(file_path)
@@ -56,7 +59,12 @@ class MarkdownLoader:
                 )
             )
 
-        logger.info("Загружено Markdown-файлов: %d из %s", len(documents), self._base_dir)
+        logger.info(
+            "Загружено Markdown-файлов: %d (пропущено пустых: %d) из %s",
+            len(documents),
+            skipped,
+            self._base_dir,
+        )
         return documents
 
     @staticmethod
@@ -64,9 +72,18 @@ class MarkdownLoader:
         """
         :param md_path: Путь к .md-файлу страницы.
         :return: Метаданные из одноимённого .json; пустой словарь, если файла нет.
+        :raise ValueError: Если файл есть, но это не корректный JSON-объект.
         """
+        meta_path = md_path.with_suffix(".json")
         try:
-            return json.loads(md_path.with_suffix(".json").read_text(encoding="utf-8"))
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
         except FileNotFoundError:
             logger.warning("Нет метаданных для %s: source будет путём к файлу", md_path.name)
             return {}
+        except json.JSONDecodeError as exc:
+            # В сообщении самого исключения нет имени файла, а их сотни.
+            raise ValueError(f"Некорректный JSON метаданных: {meta_path}") from exc
+
+        if not isinstance(meta, dict):
+            raise ValueError(f"Метаданные должны быть JSON-объектом: {meta_path}")
+        return meta
