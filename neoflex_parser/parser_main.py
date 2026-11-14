@@ -1,24 +1,25 @@
 """Точка входа парсера Neoflex."""
 
-
+import logging
 import sys
 import time
-import logging
-from pathlib import Path
+from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
-from typing import Iterator, NamedTuple
-from lib.logging_config import setup_logging
+from pathlib import Path
+from typing import NamedTuple
+
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.webdriver import WebDriver as Chrome
+
+from lib.logging_config import setup_logging
+from neoflex_parser.config import ParserSettings, get_parser_settings
 from neoflex_parser.fetch import build_session
-from neoflex_parser.robot import RobotsChecker
-from neoflex_parser.storage import PageStorage
-from neoflex_parser.sitemap import SitemapManager
 from neoflex_parser.parser import NeoflexPageParser
 from neoflex_parser.registry import resolve_parser_class
-from neoflex_parser.config import ParserSettings, get_parser_settings
-
+from neoflex_parser.robot import RobotsChecker
+from neoflex_parser.sitemap import SitemapManager
+from neoflex_parser.storage import PageStorage
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,8 @@ def chrome_driver(settings: ParserSettings) -> Iterator[Chrome]:
     """
     options = Options()
     options.add_argument("--headless=new")
+    # Нужны при запуске в контейнере: без них Chrome не стартует под root
+    # и падает на маленьком /dev/shm.
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     # Без этого Chrome шлёт свой UA, и правила robots.txt, проверенные для
@@ -56,7 +59,24 @@ def chrome_driver(settings: ParserSettings) -> Iterator[Chrome]:
         logger.info("WebDriver закрыт")
 
 
-def parse_page(driver: Chrome, parser_class: type[NeoflexPageParser], url: str, timeout: float) -> str:
+def unique_urls(urls: Iterable[str]) -> list[str]:
+    """
+    Убирает повторы по имени файла, под которым страница сохранится.
+
+    Адреса «…/about/company» и «…/about/company/» — одна страница, а в хранилище они
+    дали бы один файл: без этого страница скачивалась бы дважды. Разные страницы получают
+    разные имена файлов (см. PageStorage.url_to_slug), поэтому здесь не теряются.
+
+    :param urls: URL из sitemap.
+    :return: URL без повторов; порядок сохранён, из повторов остаётся первый.
+    """
+    unique: dict[str, str] = {}
+    for url in urls:
+        unique.setdefault(PageStorage.url_to_slug(url), url)
+    return list(unique.values())
+
+
+def parse_page(driver: Chrome, parser_class: type[NeoflexPageParser], url: str, wait_timeout: float) -> str:
     """
     Парсит одну страницу.
 
@@ -66,11 +86,11 @@ def parse_page(driver: Chrome, parser_class: type[NeoflexPageParser], url: str, 
     :param driver: WebDriver.
     :param parser_class: Класс парсера.
     :param url: URL страницы.
-    :param timeout: Таймаут ожиданий.
+    :param wait_timeout: Таймаут ожидания элементов страницы в секундах.
     :return: Markdown или пустая строка при ошибке.
     """
     try:
-        return parser_class(driver, url, timeout).parse()
+        return parser_class(driver, url, wait_timeout).parse()
     except Exception:
         logger.exception("Не удалось распарсить %s", url)
         return ""
@@ -82,7 +102,7 @@ def crawl(
     storage: PageStorage,
     driver: Chrome,
     *,
-    timeout: float,
+    wait_timeout: float,
 ) -> CrawlStats:
     """
     Обходит URL и сохраняет страницы.
@@ -95,7 +115,7 @@ def crawl(
     :param robots: Проверка robots.txt.
     :param storage: Хранилище страниц.
     :param driver: WebDriver, через который парсятся страницы.
-    :param timeout: Таймаут ожиданий на странице в секундах.
+    :param wait_timeout: Таймаут ожидания элементов страницы в секундах.
     :return: Количество спарсенных, пропущенных и неудачных страниц.
     """
     delay = robots.get_delay()
@@ -113,7 +133,7 @@ def crawl(
             continue
 
         logger.info("Парсинг %s", url)
-        content = parse_page(driver, parser_class, url, timeout)
+        content = parse_page(driver, parser_class, url, wait_timeout)
         title = (driver.title or "").strip() or None
         if storage.save(url, content, title=title):
             parsed += 1
@@ -134,21 +154,20 @@ def run_parse(settings: ParserSettings) -> int:
     session = build_session(settings)
     try:
         robots = RobotsChecker(settings, session)
-        if not robots.can_fetch(settings.base_url):
-            logger.error("Доступ к %s запрещён robots.txt", settings.base_url)
+        if not robots.can_fetch(settings.site_url):
+            logger.error("Доступ к %s запрещён robots.txt", settings.site_url)
             return 1
 
-        urls = list(dict.fromkeys(
-            SitemapManager(settings, robots, session).load_urls()
-        ))
+        sitemap_urls = SitemapManager(settings, robots, session).load_urls()
+        urls = unique_urls(sitemap_urls)
         if not urls:
             logger.error("Нет URL для обработки")
             return 1
-        logger.info("Загружено URL: %d", len(urls))
+        logger.info("Загружено URL: %d (уникальных страниц: %d)", len(sitemap_urls), len(urls))
 
         storage = PageStorage(settings)
         with chrome_driver(settings) as driver:
-            stats = crawl(urls, robots, storage, driver, timeout=settings.timeout)
+            stats = crawl(urls, robots, storage, driver, wait_timeout=settings.element_wait_timeout)
     finally:
         session.close()
 
@@ -163,6 +182,8 @@ def main() -> int:
     """
     Верхний уровень: любая необработанная ошибка логируется со стектрейсом
     и превращается в код возврата 1.
+
+    :return: Код возврата процесса.
     """
     settings = get_parser_settings()
     setup_logging(settings.log_level, Path(settings.log_dir) / "neoflex_parser.log")
