@@ -1,15 +1,16 @@
 """Загрузка URL из sitemap с локальным кэшем."""
 
-import time
 import logging
-import requests
+import time
 from pathlib import Path
+
+import requests
 from lxml import etree
 from lxml.etree import ElementBase
+
+from .config import ParserSettings
 from .fetch import fetch
 from .robot import RobotsChecker
-from .config import ParserSettings
-
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,11 @@ class SitemapManager:
     """Загружает URL из sitemap и кэширует в файл."""
 
     def __init__(self, settings: ParserSettings, robots: RobotsChecker, session: requests.Session) -> None:
+        """
+        :param settings: Настройки парсера.
+        :param robots: Проверка robots.txt (источник адресов sitemap и правил доступа).
+        :param session: Session с retry.
+        """
         self._settings = settings
         self._robots = robots
         self._session = session
@@ -59,19 +65,22 @@ class SitemapManager:
         """
         :return: True, если файл кэша моложе sitemap_cache_ttl секунд.
         """
+        ttl = self._settings.sitemap_cache_ttl
+        if ttl == 0:
+            return False  # Кэш отключён настройкой.
         try:
             age = time.time() - Path(self._settings.sitemap_path).stat().st_mtime
         except FileNotFoundError:
             return False
-        fresh = age < self._settings.sitemap_cache_ttl
+        fresh = age < ttl
         if not fresh:
-            logger.info(
-                "Кэш sitemap устарел (возраст %.0f с, TTL %d с)",
-                age, self._settings.sitemap_cache_ttl,
-            )
+            logger.info("Кэш sitemap устарел (возраст %.0f с, TTL %d с)", age, ttl)
         return fresh
 
     def _read_cache(self) -> list[str]:
+        """
+        :return: URL из файла кэша; пустой список, если файла нет.
+        """
         try:
             text = Path(self._settings.sitemap_path).read_text(encoding="utf-8")
         except FileNotFoundError:
@@ -79,9 +88,17 @@ class SitemapManager:
         return [line.strip() for line in text.splitlines() if line.strip()]
 
     def _write_cache(self, urls: list[str]) -> None:
+        """
+        Записывает кэш через временный файл: прерванный запуск не оставит обрезанный
+        список, который иначе сутки считался бы свежим.
+
+        :param urls: URL для сохранения.
+        """
         path = Path(self._settings.sitemap_path)
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text("\n".join(urls) + "\n", encoding="utf-8")
+        tmp_path = path.with_name(path.name + ".tmp")
+        tmp_path.write_text("\n".join(urls) + "\n", encoding="utf-8")
+        tmp_path.replace(path)
         logger.info("Sitemap сохранён в %s (%d URL)", path, len(urls))
 
     def _download_all(self) -> list[str]:
@@ -95,7 +112,8 @@ class SitemapManager:
 
     def _load_sitemap(self, sitemap_url: str) -> list[str]:
         """
-        Загружает один sitemap. Если это sitemap index — загружает вложенные.
+        Загружает один sitemap. Если это sitemap index — загружает вложенные
+        (один уровень вложенности).
 
         :param sitemap_url: URL sitemap-файла.
         :return: URL страниц; пустой список, если sitemap недоступен.
@@ -138,4 +156,10 @@ class SitemapManager:
 
     @staticmethod
     def _extract(root: ElementBase, xpath: str) -> list[str]:
-        return [loc.strip() for loc in root.xpath(xpath)]
+        """
+        :param root: Корневой элемент XML.
+        :param xpath: Выражение, выбирающее текст элементов loc.
+        :return: Адреса без пробелов по краям; пустые значения отброшены, иначе пустой
+            адрес дошёл бы до обхода.
+        """
+        return [url for loc in root.xpath(xpath) if (url := loc.strip())]
