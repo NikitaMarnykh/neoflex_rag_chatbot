@@ -14,6 +14,7 @@ from .parser import (
     NeoflexPressArticlePageParser,
     NeoflexProjectsPageParser,
     NeoflexServicesPageParser,
+    NeoflexCustomersPageParser,
 )
 
 
@@ -23,6 +24,7 @@ EXACT_PARSERS: dict[str, type[NeoflexPageParser]] = {
     "/about/history": NeoflexAboutOfHistoryPageParser,
     "/about/partners": NeoflexAboutOfPartnersPageParser,
     "/about/career": NeoflexAboutOfCareerPageParser,
+    "/about/customers": NeoflexCustomersPageParser,
     "/contacts": NeoflexContactsPageParser,
 }
 
