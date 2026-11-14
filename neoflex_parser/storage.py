@@ -1,14 +1,14 @@
 """Сохранение Markdown-страниц с метаданными."""
 
-import re
 import json
 import logging
-from typing import Any
-from pathlib import Path
-from urllib.parse import urlparse
-from .config import ParserSettings
+import re
 from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+from urllib.parse import urlparse
 
+from .config import ParserSettings
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +21,9 @@ class PageStorage:
     """Сохраняет страницы и метаданные на диск."""
 
     def __init__(self, settings: ParserSettings) -> None:
+        """
+        :param settings: Настройки парсера (каталог страниц и минимальная длина контента).
+        """
         self._dir = Path(settings.pages_dir)
         self._min_length = settings.min_page_length
         # exist_ok=True позволяет безопасно перезапускать парсер:
@@ -31,10 +34,13 @@ class PageStorage:
         """
         Сохраняет Markdown и метаданные.
 
+        Метаданные пишутся раньше .md: индексатор ищет страницы по .md-файлам, и
+        прерванный запуск не оставит страницу без URL (тогда source стал бы путём к файлу).
+
         :param url: URL страницы.
         :param markdown: Markdown-контент.
         :param title: Заголовок страницы.
-        :return: Путь к .md-файлу или None, если контент пуст.
+        :return: Путь к .md-файлу или None, если контент короче min_page_length.
         """
         length = len((markdown or "").strip())
 
@@ -49,8 +55,6 @@ class PageStorage:
         base = self._dir / slug
         markdown_path = base.with_suffix(".md")
         metadata_path = base.with_suffix(".json")
-        markdown_path.write_text(markdown, encoding="utf-8")
-        # Метаданные храним рядом с .md
         metadata: dict[str, Any] = {
             "url": url,
             "title": title,
@@ -58,6 +62,7 @@ class PageStorage:
             "length": len(markdown),
         }
         metadata_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
+        markdown_path.write_text(markdown, encoding="utf-8")
         logger.info("Сохранено %s (%d символов)", markdown_path, len(markdown))
         return str(markdown_path)
 
@@ -65,6 +70,9 @@ class PageStorage:
     def url_to_slug(url: str) -> str:
         """
         Превращает URL в безопасное имя файла (без расширения).
+
+        Имя файла — контракт с индексатором: по его префиксу определяется тип документа
+        (indexer.chunker.DOC_TYPE_MAP). Query и фрагмент в имени не участвуют.
 
         :param url: URL страницы.
         :return: Слаг из строчных латинских букв, цифр и подчёркиваний.
