@@ -1,11 +1,12 @@
 """Работа с robots.txt."""
 
 import logging
-import requests
-from .fetch import fetch
-from .config import ParserSettings
 from urllib.robotparser import RobotFileParser
 
+import requests
+
+from .config import ParserSettings
+from .fetch import fetch
 
 logger = logging.getLogger(__name__)
 
@@ -23,10 +24,10 @@ class RobotsChecker:
         self._default_delay = settings.request_delay
         # Исключение пробрасывается наверх намеренно: если robots.txt недоступен,
         # парсер не должен работать вслепую, игнорируя правила сайта.
-        text = fetch(session, settings.robot_url, timeout=settings.timeout)
+        text = fetch(session, settings.robots_url, timeout=settings.timeout)
         self._parser = RobotFileParser()
         self._parser.parse(text.splitlines())
-        logger.info("robots.txt загружен из %s", settings.robot_url)
+        logger.info("robots.txt загружен из %s", settings.robots_url)
 
     def can_fetch(self, url: str) -> bool:
         """
@@ -42,14 +43,13 @@ class RobotsChecker:
         :return: crawl-delay из robots.txt или базовая задержка.
         """
         raw = self._parser.crawl_delay(self._user_agent)
-        # Приведение к float критично: RobotFileParser может вернуть int,
-        # а time.sleep() в вызывающем коде ожидает число с плавающей точкой.
+        # RobotFileParser возвращает crawl-delay числом из файла (int или str-подобным
+        # значением), а контракт метода — float.
         return float(raw) if raw is not None else self._default_delay
 
     def sitemaps(self) -> list[str]:
         """
         :return: URL sitemap-файлов, объявленных в robots.txt.
         """
-        # Возврат пустого списка вместо None важен: вызывающий код ожидает итерируемый объект
-        # и не должен делать проверку на None перед циклом for.
+        # Пустой список вместо None: вызывающему коду не нужна проверка перед циклом for.
         return self._parser.site_maps() or []
