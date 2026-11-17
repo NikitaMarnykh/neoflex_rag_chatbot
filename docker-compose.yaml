@@ -1,0 +1,31 @@
+x-common: &common
+  image: neoflex-rag
+  build: .
+  env_file: .env
+  volumes:
+    - ./data:/srv/data      # страницы парсера и индекс Chroma
+    - ./logs:/srv/logs
+    - hf-cache:/models      # кэш модели эмбеддингов, чтобы не скачивать при каждом старте
+
+services:
+  api:
+    <<: *common
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  # Разовая задача: docker compose --profile tools run --rm indexer
+  indexer:
+    <<: *common
+    command: python -m indexer.indexer_main
+    profiles: ["tools"]
+
+  # Разовая задача: docker compose --profile tools run --rm parser
+  parser:
+    <<: *common
+    command: python -m neoflex_parser.parser_main
+    profiles: [ "tools" ]
+    shm_size: "1gb"   # Chrome падает на маленьком /dev/shm
+
+volumes:
+  hf-cache:
