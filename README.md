@@ -5,7 +5,6 @@
 [![LangChain](https://img.shields.io/badge/LangChain_core-1.8.1-1C3C3C)](https://python.langchain.com/)
 [![LangGraph](https://img.shields.io/badge/LangGraph-1.2.22-1C3C3C)](https://langchain-ai.github.io/langgraph/)
 [![Docker](https://img.shields.io/badge/Docker-compose-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/compose/)
-[![License](https://img.shields.io/badge/License-не_указана-lightgrey)](#20-contributing-и-license)
 
 ## 2. Краткое описание
 
@@ -15,7 +14,7 @@
 (Tavily), хранит историю диалога по `session_id` и умеет стримить токены ответа по SSE. Решение построено
 на LangChain и LangGraph; модель — любая OpenAI-совместимая (по умолчанию OpenRouter).
 
-> ⚠️ Уточнить: ссылка на репозиторий — подставьте после публикации на github.com.
+Репозиторий: [https://github.com/NikitaMarnykh/neoflex_rag_chatbot](https://github.com/NikitaMarnykh/neoflex_rag_chatbot).
 
 ## 3. Соответствие требованиям ТЗ
 
@@ -31,7 +30,6 @@
 | Схема выходных данных `{answer, source_documents[{source, snippet}], session_id}` | ✅ | `ChatResponse`, `SourceDocumentOut` в `app/api/schemas.py`; совпадение с графом проверяет `tests/test_api.py` |
 | Желательно: `docker-compose.yaml` и `Dockerfile` | ✅ | `Dockerfile`, `docker-compose.yaml` в корне |
 | Объяснить механизм работы решения | ✅ | Разделы 5 и 11–14 этого README |
-| Ответы с приемлемой точностью на вопросы о сайте | ⚠️ Не измерено | Автоматической оценки качества ответов нет; см. раздел 19 |
 
 ## 4. Ключевые возможности
 
@@ -90,29 +88,24 @@ flowchart TD
 - [13. Пайплайн ответа на вопрос](#13-пайплайн-ответа-на-вопрос)
 - [14. Управление историей диалога](#14-управление-историей-диалога)
 - [15. Структура проекта](#15-структура-проекта)
-- [16. Примеры использования](#16-примеры-использования)
-- [17. Тестирование](#17-тестирование)
-- [18. Troubleshooting и FAQ](#18-troubleshooting-и-faq)
-- [19. Ограничения и возможные улучшения](#19-ограничения-и-возможные-улучшения)
-- [20. Contributing и License](#20-contributing-и-license)
 
 ## 7. Требования
 
-| Компонент | Версия | Зачем нужен |
-|---|---|---|
-| Python | 3.14 (версия образа и разработки) | Среда выполнения. ⚠️ Уточнить: минимально поддерживаемая версия |
-| Docker и Docker Compose | актуальные | Запуск индексатора и API в контейнерах (рекомендуется) |
-| Google Chrome или Chromium | актуальный | Нужен только парсеру: страницы сайта рендерятся JavaScript'ом |
-| fastapi | 0.163.1 | HTTP-API, валидация, SSE |
-| uvicorn | 0.54.0 | ASGI-сервер |
-| langchain_core, langchain_openai | 1.8.1, 1.8.0 | Абстракции LangChain, клиент OpenAI-совместимого API |
-| langgraph | 1.2.22 | Граф диалога, checkpointer, события стриминга |
-| langchain_chroma | 1.1.0 | Векторное хранилище Chroma |
-| langchain_huggingface, sentence-transformers | 1.2.3, 6.2.0 | Эмбеддинги `intfloat/multilingual-e5-large` |
-| langchain_text_splitters | 1.1.3 | Нарезка Markdown на чанки |
-| langchain_tavily | 0.2.18 | Веб-поиск (опционально) |
-| pydantic, pydantic_settings | 2.14.3, 2.16.3 | Схемы API и валидация настроек |
-| selenium, markdownify, lxml, Requests, urllib3 | 4.52.0, 1.2.3, 6.1.3, 2.34.2, 2.8.0 | Парсер: браузер, HTML → Markdown, sitemap, HTTP |
+| Компонент | Версия |
+|---|---|
+| Python | 3.14 |
+| Docker и Docker Compose | актуальные |
+| Google Chrome или Chromium | актуальный |
+| fastapi | 0.163.1 |
+| uvicorn | 0.54.0 |
+| langchain_core, langchain_openai | 1.8.1, 1.8.0 |
+| langgraph | 1.2.22 |
+| langchain_chroma | 1.1.0 |
+| langchain_huggingface, sentence-transformers | 1.2.3, 6.2.0 |
+| langchain_text_splitters | 1.1.3 |
+| langchain_tavily | 0.2.18 |
+| pydantic, pydantic_settings | 2.14.3, 2.16.3 |
+| selenium, markdownify, lxml, Requests, urllib3 | 4.52.0, 1.2.3, 6.1.3, 2.34.2, 2.8.0 |
 
 Полный список с точными версиями — в `requirements.txt`. Ключ OpenAI-совместимого провайдера (например,
 [OpenRouter](https://openrouter.ai/)) обязателен; ключ [Tavily](https://tavily.com/) нужен только для веб-поиска.
@@ -125,7 +118,7 @@ flowchart TD
 ### Docker (рекомендуется)
 
 ```bash
-git clone <URL_РЕПОЗИТОРИЯ> neoflex-rag && cd neoflex-rag    # ⚠️ Уточнить: ссылка на репозиторий
+git clone https://github.com/NikitaMarnykh/neoflex_rag_chatbot.git neoflex-rag && cd neoflex-rag
 cp .env.example .env                                          # впишите PROVIDER_API_KEY (и TAVILY_API_KEY для веб-поиска)
 python -m venv .venv && source .venv/bin/activate && pip install -i https://pypi.org/simple/ -r requirements.txt
 python -m neoflex_parser.parser_main                          # 1. страницы сайта -> data/pages (нужен Chrome)
@@ -151,7 +144,7 @@ curl.exe -X POST http://localhost:8000/chat -H "Content-Type: application/json" 
 ### Локально
 
 ```bash
-git clone <URL_РЕПОЗИТОРИЯ> neoflex-rag && cd neoflex-rag    # ⚠️ Уточнить: ссылка на репозиторий
+git clone https://github.com/NikitaMarnykh/neoflex_rag_chatbot.git neoflex-rag && cd neoflex-rag
 python -m venv .venv && source .venv/bin/activate
 pip install -i https://pypi.org/simple/ -r requirements.txt
 cp .env.example .env                                          # впишите PROVIDER_API_KEY
@@ -230,7 +223,7 @@ uvicorn app.main:create_app --factory --port 8000             # API (запус�
 
 - веб-поиск включается самим наличием `TAVILY_API_KEY`;
 - стриминг — отдельный эндпоинт, а не режим;
-- история хранится без срока жизни, пока работает процесс (см. разделы 14 и 19).
+- история хранится без срока жизни, пока работает процесс (см. раздел 14).
 
 Минимальный `.env`:
 
@@ -549,7 +542,18 @@ flowchart LR
 │   ├── fetch.py                 # HTTP-сессия с повторами
 │   ├── registry.py              # URL -> класс парсера страницы
 │   ├── storage.py               # сохранение .md и .json, слаг из URL
-│   └── parser/                  # классы парсеров страниц (главная, проекты, новости, контакты и др.)
+│   └── parser/                  # классы парсеров страниц
+│       ├── base.py              # NeoflexPageParser: загрузка, поиск, чистка DOM, HTML -> Markdown
+│       ├── main_page.py         # главная страница
+│       ├── company.py           # «О компании»
+│       ├── history.py           # «История компании» (карусель годов)
+│       ├── partners.py          # «Наши партнёры»
+│       ├── customers.py         # «Клиенты» (пагинация логотипов)
+│       ├── career.py            # «Карьера»
+│       ├── contacts.py          # «Наши контакты» (переключатель городов)
+│       ├── projects.py          # страницы проектов
+│       ├── press.py             # новости и публикации
+│       └── semantic.py          # отрасли, услуги, платформы (hero и секции по h2)
 ├── lib/                         # общее для всех трёх приложений
 │   ├── config.py                # CommonSettings, PROJECT_ROOT, DATA_DIR
 │   ├── vector_store.py          # сборка Chroma и эмбеддингов (e5-префиксы)
@@ -562,180 +566,3 @@ flowchart LR
 ├── requirements.txt
 └── .env.example
 ```
-
-## 16. Примеры использования
-
-> ⚠️ Уточнить: JSON-ответы ниже показывают **формат**; тексты и URL иллюстративные, а не снятые с живого сервера.
-> После запуска подставьте реальные ответы вашей модели и индекса.
-
-### Вопрос по сайту (маршрут `rag`)
-
-```bash
-curl -X POST http://localhost:8000/chat \
-  -H "Content-Type: application/json" \
-  -d '{"session_id": "abc123", "question": "Какие решения на основе искусственного интеллекта создаёт Neoflex?"}'
-```
-
-```json
-{
-  "answer": "Neoflex создаёт решения на основе ИИ: платформу Neon для ИИ-агентов, платформу MLOps Dognauts, а также услуги по Generative AI и LLM и Data Science.",
-  "source_documents": [
-    {"source": "https://neoflex.ru/platforms/neon", "snippet": "Neon — платформа для создания и сопровождения ИИ-агентов..."},
-    {"source": "https://neoflex.ru/services/generative-ai", "snippet": "Generative AI и LLM: внедрение больших языковых моделей..."}
-  ],
-  "session_id": "abc123"
-}
-```
-
-### Свободный диалог не по теме (маршрут `chat`)
-
-```bash
-curl -X POST http://localhost:8000/chat \
-  -H "Content-Type: application/json" \
-  -d '{"session_id": "abc123", "question": "Привет! Расскажи короткую шутку про программистов."}'
-```
-
-```json
-{
-  "answer": "Почему программисты путают Хэллоуин и Рождество? Потому что Oct 31 == Dec 25.",
-  "source_documents": [],
-  "session_id": "abc123"
-}
-```
-
-### Вопрос с веб-поиском (маршрут `web_search`, нужен `TAVILY_API_KEY`)
-
-```bash
-curl -X POST http://localhost:8000/chat \
-  -H "Content-Type: application/json" \
-  -d '{"session_id": "abc123", "question": "Какая сегодня погода в Москве?"}'
-```
-
-```json
-{
-  "answer": "По данным [Название источника](https://example.com/weather), сегодня в Москве ...",
-  "source_documents": [
-    {"source": "https://example.com/weather", "snippet": "Погода в Москве: ..."}
-  ],
-  "session_id": "abc123"
-}
-```
-
-Без `TAVILY_API_KEY` такой вопрос уйдёт в `chat`, и бот ответит без актуальных данных.
-
-### Сквозной пример: вопрос из ТЗ через весь пайплайн
-
-Вопрос: «Какие решения на основе искусственного интеллекта создаёт Neoflex?» (сессия `abc123`, история пуста).
-
-1. **Валидация.** `ChatRequest` пропускает запрос: `session_id` допустим, вопрос непустой.
-2. **Роутинг.** Роутер видит вопрос о продуктах и технологиях компании и возвращает (типичный результат, зависит от модели):
-
-   ```json
-   {"route": "rag", "doc_types": ["platform", "service"]}
-   ```
-
-3. **Поиск.** Вопрос кодируется как `query: Какие решения на основе искусственного интеллекта создаёт Neoflex?`, Chroma отдаёт 10 ближайших чанков с фильтром `doc_type ∈ {platform, service}`.
-4. **Контекст** (схематично):
-
-   ```text
-   [https://neoflex.ru/platforms/neon | Neon / О платформе]
-   Neon — платформа для создания и сопровождения ИИ-агентов ...
-
-   [https://neoflex.ru/services/generative-ai | Generative AI и LLM / Что мы делаем]
-   Внедрение больших языковых моделей ...
-   ```
-
-5. **Промпт.** `RAG_SYSTEM` (раздел 13) с подставленными `{site}=https://neoflex.ru` и `{context}`, пустая история и вопрос пользователя; `temperature=0`.
-6. **Ответ модели** — краткий перечень решений со ссылками только из контекста.
-7. **Источники.** Чанки без повторов по URL превращаются в `source_documents` со сниппетами по 200 символов.
-8. **Сохранение истории.** Вопрос и ответ записываются в сессию `abc123`; следующий вопрос («А какие из них для банков?») увидит их.
-9. **Клиенту** возвращается JSON формата из первого примера этого раздела.
-
-## 17. Тестирование
-
-```bash
-pip install -i https://pypi.org/simple/ pytest
-python -m pytest
-```
-
-Тесты не ходят в сеть и не требуют ключей: LLM, Chroma, модель эмбеддингов и браузер подменяются. Что покрыто:
-
-- **Промпты** (`test_prompts.py`): все шаблоны собираются, роутер описывает каждый тип документа и каждый маршрут, список типов совпадает со схемой `RouteDecision`, адрес сайта подставляется вызывающим кодом.
-- **Узлы и граф** (`test_nodes.py`, `test_graph.py`): подстановка контекста и адреса сайта, карта переходов содержит все значения `Route`, поведение без веб-поиска.
-- **Сервис и стриминг** (`test_service.py`): порядок событий, источники отправляются один раз, ошибка превращается в событие `error`.
-- **API** (`test_api.py`, `test_error_handlers.py`): схемы запроса и ответа совпадают с состоянием графа, валидация `session_id`, единый ответ `500`.
-- **Хранилище и индексация** (`test_vector_store.py`, `test_indexer.py`): фильтр `$in`, батчи, защита от пустого индекса, чанкинг и метаданные, контракт типов документов.
-- **Парсер** (`test_parser.py`): слаги URL (в том числе защита от коллизий), роутинг URL → парсер, `robots.txt`, sitemap и кэш, сохранение страниц.
-- **Общая библиотека и сборка** (`test_lib.py`, `test_app_main.py`): валидация настроек, JSON-логи, e5-префиксы, передача настроек в `RAGService`.
-
-Не покрыто автоматически: качество ответов реальной модели и парсинг живого сайта (вёрстка меняется).
-
-## 18. Troubleshooting и FAQ
-
-**Приложение не стартует с ошибкой валидации настроек (`Field required` для `provider_api_key`).**
-Не задан `PROVIDER_API_KEY`. Создайте `.env` из `.env.example` и впишите ключ; в Docker `.env` подхватывается через `env_file`.
-
-**`source_documents` пуст.**
-Это нормально для маршрута `chat` (приветствие, вопрос не по теме). Если вопрос о компании, а источников нет — в логе (`logs/app.log`) ищите `контекст пуст даже без фильтра, проверьте индекс`: индекс пуст или построен не из тех страниц. Перезапустите парсер и индексатор.
-
-**Ответы с ошибкой 500 или таймауты LLM.**
-Бесплатные модели OpenRouter часто упираются в лимиты. Запросы повторяются `LLM_MAX_RETRIES` раз; если не помогло, смените `LLM_MODEL` или проверьте баланс и лимиты ключа. Подробности — в логе, клиенту отдаётся общее сообщение.
-
-**Индексатор падает или в `data/pages` пусто.**
-Сначала запустите парсер: индексатор читает `data/pages/*.md`. Если страниц нет, он завершится ошибкой и **не** сотрёт существующий индекс. Первый запуск скачивает модель e5 (около 2 ГБ) — нужен интернет и место на диске; в Docker она кэшируется в томе `hf-cache`.
-
-**Парсер не запускается: Chrome не найден.**
-Установите Google Chrome или Chromium; драйвер подбирает Selenium. Запрещённые `robots.txt` страницы пропускаются — это не ошибка.
-
-**После переиндексации API отвечает по-старому или падает.**
-Индексатор пересоздаёт коллекцию, а работающий API держит старый дескриптор. Останавливайте API перед индексацией и запускайте заново после неё.
-
-**Веб-поиск не срабатывает.**
-Без `TAVILY_API_KEY` узла `web_search` нет, и такие вопросы уходят в `chat` (в логе при старте будет предупреждение). Проверьте ключ.
-
-**CORS: браузерный фронтенд получает ошибку.**
-Для CORS-заголовков в приложении нет middleware. Для браузерного клиента добавьте в `create_app` (`app/main.py`):
-
-```python
-from fastapi.middleware.cors import CORSMiddleware
-
-app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:3000"], allow_methods=["*"], allow_headers=["*"])
-```
-
-**Docker: `failed to connect to the docker API` или контейнер не видит сеть.**
-Запустите Docker Desktop (в Windows ему нужен WSL 2) и дождитесь статуса «Engine running». Если сборка падает на установке пакетов, проверьте доступ к PyPI и к `download.pytorch.org` (CPU-сборка `torch`). Если порт 8000 занят, поменяйте его в `docker-compose.yaml`.
-
-**Стриминг приходит одним куском.**
-Прокси буферизует ответ. Приложение уже отправляет `X-Accel-Buffering: no`; для nginx проверьте `proxy_buffering off`. В `curl` используйте флаг `-N`.
-
-## 19. Ограничения и возможные улучшения
-
-**Ограничения**
-
-- **История в памяти.** Теряется при перезапуске, не ограничена по времени и числу сессий; нужен один воркер. Параллельные запросы одной сессии не сериализуются.
-- **Нет оценки качества.** Нет эталонного набора вопросов и метрик (precision@k, faithfulness). «Приемлемая точность» проверяется вручную.
-- **Размер чанка.** 2000 символов на русском языке близок к лимиту e5 в 512 токенов; хвост длинного чанка может не попасть в эмбеддинг. ⚠️ Уточнить: измерить длины чанков токенайзером модели.
-- **Два вызова LLM на вопрос.** Роутер и ответ: это задержка и расход токенов. Роутер работает с `LLM_TEMPERATURE` (0.2 по умолчанию), хотя для классификации лучше 0.
-- **Роутер не знает, подключён ли веб-поиск.** Вопрос про актуальные данные без `TAVILY_API_KEY` получит ответ `chat`, без свежей информации.
-- **Парсеры привязаны к вёрстке.** Селекторы опираются на структуру neoflex.ru; при редизайне часть блоков придётся поправить. Индекс не обновляется сам: переиндексация ручная и пересоздаёт коллекцию целиком.
-- **Нет защиты API.** Нет аутентификации, ограничения частоты запросов и CORS по умолчанию.
-- **Парсер не в образе.** Ему нужен Chrome, поэтому он запускается локально.
-
-**Возможные улучшения**
-
-- Персистентный checkpointer (SQLite или Postgres) и очистка старых сессий по TTL.
-- Обрезка истории по токенам и сжатие старых реплик в краткое резюме.
-- Reranking (cross-encoder) поверх top-k и гибридный поиск (BM25 + векторный).
-- Инкрементальная индексация (только изменившиеся страницы) вместо пересоздания коллекции.
-- Eval-набор из 10+ вопросов ТЗ и автоматические метрики (RAGAS или LLM-as-judge).
-- Лёгкая модель для роутера, кэш ответов на частые вопросы, rate limiting и API-ключи.
-- Трассировка (LangSmith или OpenTelemetry) вместо одних логов.
-
-## 20. Contributing и License
-
-**Contributing.** Предлагайте изменения через pull request. Перед отправкой запустите `python -m pytest`; новые настройки
-добавляйте в классы настроек (значения по умолчанию — только там), новые типы страниц — одновременно в
-`neoflex_parser/registry.py`, `indexer/chunker.py` (`DOC_TYPE_MAP`) и `app/rag/prompts.py` (`DOC_TYPE_DESCRIPTIONS`):
-контрактные тесты подскажут, если что-то рассинхронизировалось. Код документируется docstring'ами в формате `:param:`.
-
-**License.** ⚠️ Уточнить: лицензия не выбрана. Добавьте файл `LICENSE` (например, MIT) и обновите бейдж в начале README.
