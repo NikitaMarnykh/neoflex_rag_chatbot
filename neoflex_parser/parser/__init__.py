@@ -1,14 +1,16 @@
 """Парсеры страниц neoflex.ru."""
 
-from .base import DEFAULT_STRIP_TAGS, NeoflexPageParser
+
+from .main_page import NeoflexMainPageParser
+from .contacts import NeoflexContactsPageParser
+from .projects import NeoflexProjectsPageParser
+from .press import NeoflexPressArticlePageParser
+from .customers import NeoflexCustomersPageParser
 from .career import NeoflexAboutOfCareerPageParser
 from .company import NeoflexAboutOfCompanyPageParser
-from .contacts import NeoflexContactsPageParser
 from .history import NeoflexAboutOfHistoryPageParser
-from .main_page import NeoflexMainPageParser
 from .partners import NeoflexAboutOfPartnersPageParser
-from .press import NeoflexPressArticlePageParser
-from .projects import NeoflexProjectsPageParser
+from .base import DEFAULT_STRIP_TAGS, NeoflexPageParser
 from .semantic import (
     NeoflexIndustriesPageParser,
     NeoflexPlatformsPageParser,
@@ -29,4 +31,5 @@ __all__ = [
     "NeoflexPressArticlePageParser",
     "NeoflexProjectsPageParser",
     "NeoflexServicesPageParser",
+    "NeoflexCustomersPageParser",
 ]
