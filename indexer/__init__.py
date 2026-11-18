@@ -1,1 +1,1 @@
-"""Индексация Markdown-страниц neoflex.ru"
+"""Индексация Markdown-страниц neoflex.ru"""
